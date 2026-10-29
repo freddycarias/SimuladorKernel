@@ -5,191 +5,177 @@ import java.util.Scanner;
 
 import memoria.GestorMemoria;
 import modelo.GestorProcesos;
+import modelo.Proceso;
+import planificacion.PlanificadorRoundRobin;
 
 /**
- * Interfaz de línea de comandos del simulador.
- *
- * El menú recibe los gestores desde Main y los utiliza
- * para solicitar operaciones y mostrar resultados.
+ * Menu principal de la aplicacion.
+ * Permite administrar procesos, memoria y planificacion.
  */
 public class MenuPrincipal {
 
-    private final Scanner scanner = new Scanner(System.in);
-
+    private final Scanner scanner;
     private final GestorProcesos gestorProcesos;
     private final GestorMemoria gestorMemoria;
-
-    private boolean ejecutando = true;
+    private final PlanificadorRoundRobin planificador;
 
     /**
-     * Recibe los gestores compartidos del simulador.
+     * Recibe los componentes que utiliza el menu.
      */
     public MenuPrincipal(
-        GestorProcesos gestorProcesos,
-        GestorMemoria gestorMemoria
-    ) {
+            GestorProcesos gestorProcesos,
+            GestorMemoria gestorMemoria,
+            PlanificadorRoundRobin planificador) {
+
+        this.scanner = new Scanner(System.in);
         this.gestorProcesos = gestorProcesos;
         this.gestorMemoria = gestorMemoria;
+        this.planificador = planificador;
     }
 
     /**
-     * Mantiene activo el menú hasta que el usuario
-     * seleccione la opción de salida.
+     * Mantiene el menu activo hasta que el usuario elija salir.
      */
     public void iniciar() {
+        int opcion;
 
-        while (ejecutando) {
+        do {
             mostrarMenu();
+            opcion = leerEntero("Seleccione una opcion: ");
 
-            int opcion = leerEntero("Seleccione una opción: ");
+            switch (opcion) {
+                case 1:
+                    crearProceso();
+                    break;
 
-            procesarOpcion(opcion);
-        }
+                case 2:
+                    consultarMemoria();
+                    break;
 
-        scanner.close();
-        System.out.println("\nSimulador finalizado.");
+                case 3:
+                    ejecutarRoundRobin();
+                    break;
+
+                case 4:
+                    mostrarPendiente("Gestion de concurrencia");
+                    break;
+
+                case 5:
+                    mostrarPendiente("Deteccion y resolucion de deadlock");
+                    break;
+
+                case 6:
+                    gestorProcesos.mostrarProcesos();
+                    break;
+
+                case 7:
+                    consultarEstadoGeneral();
+                    break;
+
+                case 0:
+                    System.out.println("Cerrando el simulador...");
+                    break;
+
+                default:
+                    System.out.println("Opcion no valida.");
+            }
+
+        } while (opcion != 0);
     }
 
     /**
-     * Imprime las opciones disponibles.
+     * Muestra las opciones disponibles.
      */
     private void mostrarMenu() {
-
-        System.out.println("\n========================================");
-        System.out.println("   SIMULADOR DE FUNCIONES DEL KERNEL");
-        System.out.println("========================================");
+        System.out.println("\n====================================");
+        System.out.println(" SIMULADOR DE FUNCIONES DEL KERNEL");
+        System.out.println("====================================");
         System.out.println("1. Crear proceso");
         System.out.println("2. Consultar memoria RAM");
-        System.out.println("3. Planificación Round Robin [pendiente]");
-        System.out.println("4. Gestión de concurrencia [pendiente]");
-        System.out.println("5. Simulación de Deadlock [pendiente]");
-        System.out.println("6. Listar procesos (PCB)");
-        System.out.println("7. Consultar estado general");
+        System.out.println("3. Ejecutar planificacion Round Robin");
+        System.out.println("4. Gestion de concurrencia (pendiente)");
+        System.out.println("5. Deadlock (pendiente)");
+        System.out.println("6. Listar procesos");
+        System.out.println("7. Estado general del sistema");
         System.out.println("0. Salir");
-        System.out.println("========================================");
+        System.out.println("====================================");
     }
 
     /**
-     * Interpreta la opción seleccionada.
-     */
-    private void procesarOpcion(int opcion) {
-
-        switch (opcion) {
-            case 1:
-                crearProceso();
-                break;
-
-            case 2:
-                gestorMemoria.mostrarEstado();
-                break;
-
-            case 3:
-                mostrarPendiente("Planificación Round Robin");
-                break;
-
-            case 4:
-                mostrarPendiente("Gestión de concurrencia");
-                break;
-
-            case 5:
-                mostrarPendiente("Simulación de Deadlock");
-                break;
-
-            case 6:
-                gestorProcesos.mostrarProcesos();
-                break;
-
-            case 7:
-                consultarEstadoGeneral();
-                break;
-
-            case 0:
-                ejecutando = false;
-                break;
-
-            default:
-                System.out.println(
-                    "Opción inválida. Seleccione una opción del menú."
-                );
-        }
-    }
-
-    /**
-     * Solicita los datos y pide al gestor que cree
-     * un proceso con su correspondiente PCB.
+     * Solicita los datos y crea un proceso.
      */
     private void crearProceso() {
-
-        System.out.println("\n--- CREACIÓN DE PROCESO ---");
+        System.out.println("\n--- CREAR PROCESO ---");
 
         int memoriaMB = leerEntero(
-            "Memoria que necesita el proceso (MB): "
-        );
+                "Memoria requerida en MB: ");
 
         int rafagaCPU = leerEntero(
-            "Ráfaga total de CPU (unidades): "
-        );
+                "Rafaga total de CPU en unidades: ");
 
-        // El gestor valida los valores y reserva la memoria.
-        gestorProcesos.crearProceso(memoriaMB, rafagaCPU);
+        Proceso proceso =
+                gestorProcesos.crearProceso(memoriaMB, rafagaCPU);
 
-        // Mostramos el resultado actualizado de la RAM.
+        if (proceso != null) {
+            System.out.println(
+                    "Proceso creado correctamente con PID "
+                    + proceso.getPid());
+        }
+
         gestorMemoria.mostrarEstado();
     }
 
     /**
-     * Muestra los contadores actuales del simulador.
+     * Ejecuta la planificacion Round Robin.
      */
-    private void consultarEstadoGeneral() {
-
-        System.out.println("\n--- ESTADO GENERAL ---");
-        System.out.println(
-            "Procesos registrados: "
-            + gestorProcesos.getCantidadProcesos()
-        );
-        System.out.println(
-            "RAM utilizada: "
-            + gestorMemoria.getMemoriaUtilizadaMB() + " MB"
-        );
-        System.out.println(
-            "RAM disponible: "
-            + gestorMemoria.getMemoriaDisponibleMB() + " MB"
-        );
+    private void ejecutarRoundRobin() {
+        System.out.println("\nIniciando planificacion...");
+        planificador.ejecutarPlanificacion();
     }
 
     /**
-     * Lee un número entero y vuelve a preguntar si
-     * el usuario escribe texto u otro formato inválido.
-     *
-     * @param mensaje texto que se muestra antes de leer.
-     * @return el entero introducido.
+     * Muestra el estado de la memoria simulada.
+     */
+    private void consultarMemoria() {
+        System.out.println("\n--- ESTADO DE MEMORIA RAM ---");
+        gestorMemoria.mostrarEstado();
+    }
+
+    /**
+     * Muestra informacion general del sistema.
+     */
+    private void consultarEstadoGeneral() {
+        System.out.println("\n--- ESTADO GENERAL DEL SISTEMA ---");
+        System.out.println(
+                "Procesos registrados: "
+                + gestorProcesos.getCantidadProcesos());
+
+        gestorMemoria.mostrarEstado();
+    }
+
+    /**
+     * Indica que una funcion se implementara en una fase posterior.
+     */
+    private void mostrarPendiente(String funcionalidad) {
+        System.out.println("\n" + funcionalidad);
+        System.out.println(
+                "Esta funcionalidad se implementara en una fase posterior.");
+    }
+
+    /**
+     * Lee un entero y vuelve a solicitarlo si la entrada no es valida.
      */
     private int leerEntero(String mensaje) {
-
         while (true) {
             System.out.print(mensaje);
-
             String entrada = scanner.nextLine().trim();
 
             try {
                 return Integer.parseInt(entrada);
             } catch (NumberFormatException e) {
                 System.out.println(
-                    "Entrada inválida. Ingrese un número entero."
-                );
+                        "Entrada no valida. Introduzca un numero entero.");
             }
         }
-    }
-
-    /**
-     * Identifica las funciones que todavía no se han
-     * implementado para no presentar resultados ficticios.
-     */
-    private void mostrarPendiente(String modulo) {
-
-        System.out.println(
-            "\nEl módulo \"" + modulo
-            + "\" se implementará en una fase posterior."
-        );
     }
 }

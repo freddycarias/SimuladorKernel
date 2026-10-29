@@ -2,30 +2,31 @@
 import menu.MenuPrincipal;
 import memoria.GestorMemoria;
 import modelo.GestorProcesos;
+import planificacion.PlanificadorRoundRobin;
 
-/**
- * Punto de entrada del Simulador de Funciones del Kernel.
- *
- * Inicializa los componentes principales y los conecta.
- */
 public class Main {
 
     public static void main(String[] args) {
 
-        // Creamos una sola instancia del gestor de memoria.
+        // Administra la memoria RAM simulada.
         GestorMemoria gestorMemoria = new GestorMemoria();
 
-        // El gestor de procesos utilizará esa misma memoria.
+        // Administra los procesos y sus identificadores PID.
         GestorProcesos gestorProcesos =
-            new GestorProcesos(gestorMemoria);
+                new GestorProcesos(gestorMemoria);
 
-        // Entregamos los gestores al menú.
+        // Planifica los procesos usando Round Robin.
+        PlanificadorRoundRobin planificador =
+                new PlanificadorRoundRobin(gestorProcesos);
+
+        // El menu recibe los gestores y el planificador.
         MenuPrincipal menu = new MenuPrincipal(
-            gestorProcesos,
-            gestorMemoria
+                gestorProcesos,
+                gestorMemoria,
+                planificador
         );
 
-        // Iniciamos la interfaz de consola.
+        // Inicia la aplicacion.
         menu.iniciar();
     }
 }
