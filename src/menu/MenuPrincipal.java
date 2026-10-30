@@ -7,10 +7,10 @@ import memoria.GestorMemoria;
 import modelo.GestorProcesos;
 import modelo.Proceso;
 import planificacion.PlanificadorRoundRobin;
+import concurrencia.GestorConcurrencia;
 
 /**
- * Menu principal de la aplicacion.
- * Permite administrar procesos, memoria y planificacion.
+ * Menu principal del SimuladorKernel.
  */
 public class MenuPrincipal {
 
@@ -18,23 +18,26 @@ public class MenuPrincipal {
     private final GestorProcesos gestorProcesos;
     private final GestorMemoria gestorMemoria;
     private final PlanificadorRoundRobin planificador;
+    private final GestorConcurrencia gestorConcurrencia;
 
     /**
-     * Recibe los componentes que utiliza el menu.
+     * Constructor que recibe los componentes del sistema.
      */
     public MenuPrincipal(
             GestorProcesos gestorProcesos,
             GestorMemoria gestorMemoria,
-            PlanificadorRoundRobin planificador) {
+            PlanificadorRoundRobin planificador,
+            GestorConcurrencia gestorConcurrencia) {
 
         this.scanner = new Scanner(System.in);
         this.gestorProcesos = gestorProcesos;
         this.gestorMemoria = gestorMemoria;
         this.planificador = planificador;
+        this.gestorConcurrencia = gestorConcurrencia;
     }
 
     /**
-     * Mantiene el menu activo hasta que el usuario elija salir.
+     * Inicia el menu principal.
      */
     public void iniciar() {
         int opcion;
@@ -53,11 +56,11 @@ public class MenuPrincipal {
                     break;
 
                 case 3:
-                    ejecutarRoundRobin();
+                    planificador.ejecutarPlanificacion();
                     break;
 
                 case 4:
-                    mostrarPendiente("Gestion de concurrencia");
+                    menuConcurrencia();
                     break;
 
                 case 5:
@@ -84,7 +87,7 @@ public class MenuPrincipal {
     }
 
     /**
-     * Muestra las opciones disponibles.
+     * Muestra las opciones del menu principal.
      */
     private void mostrarMenu() {
         System.out.println("\n====================================");
@@ -93,7 +96,7 @@ public class MenuPrincipal {
         System.out.println("1. Crear proceso");
         System.out.println("2. Consultar memoria RAM");
         System.out.println("3. Ejecutar planificacion Round Robin");
-        System.out.println("4. Gestion de concurrencia (pendiente)");
+        System.out.println("4. Gestion de concurrencia");
         System.out.println("5. Deadlock (pendiente)");
         System.out.println("6. Listar procesos");
         System.out.println("7. Estado general del sistema");
@@ -126,15 +129,115 @@ public class MenuPrincipal {
     }
 
     /**
-     * Ejecuta la planificacion Round Robin.
+     * Submenu para administrar la concurrencia.
      */
-    private void ejecutarRoundRobin() {
-        System.out.println("\nIniciando planificacion...");
-        planificador.ejecutarPlanificacion();
+    private void menuConcurrencia() {
+        int opcion;
+
+        do {
+            System.out.println("\n================================");
+            System.out.println(" GESTION DE CONCURRENCIA");
+            System.out.println("================================");
+            System.out.println("1. Solicitar acceso al semaforo");
+            System.out.println("2. Modificar variable compartida");
+            System.out.println("3. Liberar semaforo");
+            System.out.println("4. Consultar estado de concurrencia");
+            System.out.println("0. Volver al menu principal");
+            System.out.println("================================");
+
+            opcion = leerEntero("Seleccione una opcion: ");
+
+            switch (opcion) {
+                case 1:
+                    solicitarAcceso();
+                    break;
+
+                case 2:
+                    modificarVariable();
+                    break;
+
+                case 3:
+                    liberarSemaforo();
+                    break;
+
+                case 4:
+                    gestorConcurrencia.mostrarEstado();
+                    break;
+
+                case 0:
+                    System.out.println(
+                            "Regresando al menu principal...");
+                    break;
+
+                default:
+                    System.out.println("Opcion no valida.");
+            }
+
+        } while (opcion != 0);
     }
 
     /**
-     * Muestra el estado de la memoria simulada.
+     * Permite que un proceso solicite el semaforo.
+     */
+    private void solicitarAcceso() {
+        System.out.println("\n--- SOLICITAR ACCESO ---");
+
+        gestorProcesos.mostrarProcesos();
+
+        int pid = leerEntero("Ingrese el PID del proceso: ");
+
+        Proceso proceso = gestorProcesos.buscarPorPID(pid);
+
+        if (proceso == null) {
+            System.out.println("No existe un proceso con ese PID.");
+            return;
+        }
+
+        gestorConcurrencia.solicitarAcceso(proceso);
+    }
+
+    /**
+     * Permite modificar la variable compartida.
+     */
+    private void modificarVariable() {
+        System.out.println("\n--- MODIFICAR VARIABLE ---");
+
+        int pid = leerEntero("Ingrese el PID del proceso: ");
+
+        Proceso proceso = gestorProcesos.buscarPorPID(pid);
+
+        if (proceso == null) {
+            System.out.println("Proceso no encontrado.");
+            return;
+        }
+
+        int cantidad = leerEntero(
+                "Cantidad que desea sumar a la variable: ");
+
+        gestorConcurrencia.modificarVariableCompartida(
+                proceso, cantidad);
+    }
+
+    /**
+     * Permite que el proceso propietario libere el semaforo.
+     */
+    private void liberarSemaforo() {
+        System.out.println("\n--- LIBERAR SEMAFORO ---");
+
+        int pid = leerEntero("Ingrese el PID del proceso: ");
+
+        Proceso proceso = gestorProcesos.buscarPorPID(pid);
+
+        if (proceso == null) {
+            System.out.println("Proceso no encontrado.");
+            return;
+        }
+
+        gestorConcurrencia.liberarAcceso(proceso);
+    }
+
+    /**
+     * Consulta el estado de la memoria RAM.
      */
     private void consultarMemoria() {
         System.out.println("\n--- ESTADO DE MEMORIA RAM ---");
@@ -142,19 +245,21 @@ public class MenuPrincipal {
     }
 
     /**
-     * Muestra informacion general del sistema.
+     * Muestra el estado general del sistema.
      */
     private void consultarEstadoGeneral() {
         System.out.println("\n--- ESTADO GENERAL DEL SISTEMA ---");
+
         System.out.println(
                 "Procesos registrados: "
                 + gestorProcesos.getCantidadProcesos());
 
         gestorMemoria.mostrarEstado();
+        gestorConcurrencia.mostrarEstado();
     }
 
     /**
-     * Indica que una funcion se implementara en una fase posterior.
+     * Informa que una funcionalidad esta pendiente.
      */
     private void mostrarPendiente(String funcionalidad) {
         System.out.println("\n" + funcionalidad);
@@ -163,7 +268,7 @@ public class MenuPrincipal {
     }
 
     /**
-     * Lee un entero y vuelve a solicitarlo si la entrada no es valida.
+     * Lee un numero entero y valida la entrada.
      */
     private int leerEntero(String mensaje) {
         while (true) {

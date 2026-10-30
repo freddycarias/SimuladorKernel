@@ -3,30 +3,35 @@ import menu.MenuPrincipal;
 import memoria.GestorMemoria;
 import modelo.GestorProcesos;
 import planificacion.PlanificadorRoundRobin;
+import concurrencia.GestorConcurrencia;
 
 public class Main {
 
-    public static void main(String[] args) {
+        public static void main(String[] args) {
+                // Administrador de la memoria RAM simulada.
+                GestorMemoria gestorMemoria = new GestorMemoria();
 
-        // Administra la memoria RAM simulada.
-        GestorMemoria gestorMemoria = new GestorMemoria();
+                // Administrador de los procesos.
+                GestorProcesos gestorProcesos =
+                        new GestorProcesos(gestorMemoria);
 
-        // Administra los procesos y sus identificadores PID.
-        GestorProcesos gestorProcesos =
-                new GestorProcesos(gestorMemoria);
+                // Planificador Round Robin.
+                PlanificadorRoundRobin planificador =
+                        new PlanificadorRoundRobin(gestorProcesos);
 
-        // Planifica los procesos usando Round Robin.
-        PlanificadorRoundRobin planificador =
-                new PlanificadorRoundRobin(gestorProcesos);
+                // Administrador de concurrencia.
+                GestorConcurrencia gestorConcurrencia =
+                        new GestorConcurrencia();
 
-        // El menu recibe los gestores y el planificador.
-        MenuPrincipal menu = new MenuPrincipal(
-                gestorProcesos,
-                gestorMemoria,
-                planificador
-        );
+                // Menu principal con todos los componentes.
+                MenuPrincipal menu = new MenuPrincipal(
+                        gestorProcesos,
+                        gestorMemoria,
+                        planificador,
+                        gestorConcurrencia
+                );
 
-        // Inicia la aplicacion.
-        menu.iniciar();
-    }
+                // Iniciar el simulador.
+                menu.iniciar();
+        }
 }
