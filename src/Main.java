@@ -4,6 +4,7 @@ import memoria.GestorMemoria;
 import modelo.GestorProcesos;
 import planificacion.PlanificadorRoundRobin;
 import concurrencia.GestorConcurrencia;
+import deadlock.GestorDeadlock;
 
 public class Main {
 
@@ -23,14 +24,17 @@ public class Main {
                 GestorConcurrencia gestorConcurrencia =
                         new GestorConcurrencia();
 
+                // Administrador de deteccion y resolucion de deadlock.
+                GestorDeadlock gestorDeadlock = new GestorDeadlock();
+
                 // Menu principal con todos los componentes.
                 MenuPrincipal menu = new MenuPrincipal(
                         gestorProcesos,
                         gestorMemoria,
                         planificador,
-                        gestorConcurrencia
+                        gestorConcurrencia,
+                        gestorDeadlock
                 );
-
                 // Iniciar el simulador.
                 menu.iniciar();
         }
